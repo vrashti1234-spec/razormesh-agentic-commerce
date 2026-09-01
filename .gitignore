@@ -1,0 +1,63 @@
+# --- Environment & Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# --- Virtual Environments ---
+.venv/
+venv/
+env/
+
+# --- Testing ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# --- Docker ---
+# Ignore nothing by default; docker-compose.yml is tracked
+
+# --- Node / Frontend ---
+node_modules/
+.next/
+out/
+frontend/.env
+frontend/.env.local
+
+# --- Alembic ---
+# Track migration scripts, ignore temp stamps
+*.pyc
+
+# --- Misc ---
+*.log
+*.bak
+*.tmp
+scratch/
