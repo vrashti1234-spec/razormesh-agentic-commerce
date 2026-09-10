@@ -1,0 +1,1480 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RazorMesh | Buyer Agent</title>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .app {
+            width: 100%;
+            max-width: 760px;
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        /* ----------------------------------------
+           HEADER
+        ---------------------------------------- */
+
+        .header {
+            padding: 22px 26px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #777;
+            margin-top: 4px;
+        }
+
+        .agent-status {
+            font-size: 13px;
+            color: #16803c;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            background: #16803c;
+            border-radius: 50%;
+        }
+
+        /* ----------------------------------------
+           CHAT
+        ---------------------------------------- */
+
+        .chat {
+            height: 500px;
+            overflow-y: auto;
+            padding: 26px;
+            background: #fafafa;
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 18px;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .message-row.agent {
+            justify-content: flex-start;
+        }
+
+        .message {
+            max-width: 78%;
+            padding: 14px 16px;
+            border-radius: 15px;
+            line-height: 1.5;
+            font-size: 15px;
+            white-space: pre-wrap;
+        }
+
+        .message.user {
+            background: #111827;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.agent {
+            background: white;
+            color: #222;
+            border: 1px solid #e4e4e4;
+            border-bottom-left-radius: 4px;
+        }
+
+        .agent-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #777;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ----------------------------------------
+           RECOMMENDATION
+        ---------------------------------------- */
+
+        .recommendation {
+            margin-top: 12px;
+            padding: 16px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .recommendation-title {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        .product-option {
+            padding: 14px;
+            border: 1px solid #e2e2e2;
+            border-radius: 10px;
+            margin-top: 10px;
+            background: #fff;
+        }
+
+        .product-option.selected {
+            border-color: #111827;
+            box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.08);
+        }
+
+        .product-name {
+            font-weight: 700;
+            font-size: 15px;
+            line-height: 1.4;
+        }
+
+        .product-details {
+            margin-top: 7px;
+            color: #555;
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .product-source {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .product-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .view-product-btn,
+        .select-product-btn {
+            display: inline-block;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .view-product-btn {
+            color: #111827;
+            border: 1px solid #d5d5d5;
+            background: white;
+            text-decoration: none;
+        }
+
+        .select-product-btn {
+            border: none;
+            background: #111827;
+            color: white;
+        }
+
+        .selected-label {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 700;
+            color: #16803c;
+        }
+
+        .selection-status {
+            margin-top: 12px;
+            padding: 10px 12px;
+            border-radius: 9px;
+            background: #f7f7f7;
+            font-size: 13px;
+            color: #444;
+        }
+
+        /* ----------------------------------------
+           ACTION AREA
+        ---------------------------------------- */
+
+        .actions {
+            padding: 18px 26px;
+            border-top: 1px solid #e8e8e8;
+            background: white;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid #d5d5d5;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #888;
+        }
+
+        button {
+            border: none;
+            border-radius: 10px;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .send-btn {
+            background: #111827;
+            color: white;
+        }
+
+        .approve-btn {
+            width: 100%;
+            margin-top: 12px;
+            background: #111827;
+            color: white;
+            font-size: 16px;
+        }
+
+        .approve-btn:hover,
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ----------------------------------------
+           AGENTIC FLOW
+        ---------------------------------------- */
+
+        .flow {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            background: #f7f7f7;
+            border: 1px solid #e5e5e5;
+            font-size: 13px;
+        }
+
+        .flow-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .step {
+            padding: 5px 0;
+            color: #666;
+        }
+
+        .step.done {
+            color: #16803c;
+        }
+
+        /* ----------------------------------------
+           STATUS
+        ---------------------------------------- */
+
+        .system-status {
+            text-align: center;
+            font-size: 13px;
+            color: #777;
+            padding: 8px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+
+            .app {
+                min-height: 100vh;
+                border-radius: 0;
+            }
+
+            .chat {
+                height: calc(100vh - 180px);
+            }
+
+            .message {
+                max-width: 88%;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+<div class="app">
+
+    <!-- ========================================
+         HEADER
+    ========================================= -->
+
+    <div class="header">
+
+        <div>
+            <div class="brand">
+                RazorMesh
+            </div>
+
+            <div class="subtitle">
+                Agentic Commerce • Buyer Agent
+            </div>
+        </div>
+
+        <div class="agent-status">
+            <span class="dot"></span>
+            Buyer Agent Online
+        </div>
+
+    </div>
+
+
+    <!-- ========================================
+         CHAT
+    ========================================= -->
+
+    <div class="chat" id="chat">
+
+        <div class="message-row agent">
+
+            <div>
+
+                <div class="agent-label">
+                    Buyer Agent
+                </div>
+
+                <div class="message agent">
+                    Hi! I'm your Buyer Agent.
+
+Tell me what you'd like to buy, along with any preferences or budget you have.
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================
+         ACTION AREA
+    ========================================= -->
+
+    <div class="actions">
+
+        <div class="input-row">
+
+            <input
+                id="messageInput"
+                type="text"
+                placeholder="What would you like to buy?"
+                value="I need 1 noise cancelling headphones for travelling, under ₹10k"
+            >
+
+            <button
+                id="sendButton"
+                class="send-btn"
+                onclick="sendMessage()"
+            >
+                Send
+            </button>
+
+        </div>
+
+        <div id="approvalArea"></div>
+
+        <div id="systemStatus" class="system-status"></div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    /* ========================================
+       CONVERSATION STATE
+    ======================================== */
+
+    let conversationId = null;
+
+    let waitingForApproval = false;
+
+    let purchaseStarted = false;
+
+    // Exact live-web product selected by the user.
+    let selectedProductOption = null;
+
+
+    /* ========================================
+       CHAT UI HELPERS
+    ======================================== */
+
+    function addMessage(sender, text) {
+
+        const chat = document.getElementById("chat");
+
+        const row = document.createElement("div");
+
+        row.className =
+            "message-row " +
+            (sender === "user" ? "user" : "agent");
+
+
+        const wrapper = document.createElement("div");
+
+
+        if (sender === "agent") {
+
+            const label = document.createElement("div");
+
+            label.className = "agent-label";
+
+            label.innerText = "Buyer Agent";
+
+            wrapper.appendChild(label);
+        }
+
+
+        const message = document.createElement("div");
+
+        message.className =
+            "message " +
+            (sender === "user" ? "user" : "agent");
+
+        message.innerText = text;
+
+
+        wrapper.appendChild(message);
+
+        row.appendChild(wrapper);
+
+        chat.appendChild(row);
+
+
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+
+    function addRecommendation(recommendation) {
+
+        const chat = document.getElementById("chat");
+
+        const row = document.createElement("div");
+        row.className = "message-row agent";
+
+        const wrapper = document.createElement("div");
+
+        const label = document.createElement("div");
+        label.className = "agent-label";
+        label.innerText = "Buyer Agent";
+
+        const card = document.createElement("div");
+        card.className = "recommendation";
+
+        const title = document.createElement("div");
+        title.className = "recommendation-title";
+        title.innerText =
+            `I found ${recommendation.options.length} online option(s):`;
+
+        card.appendChild(title);
+
+        recommendation.options.forEach((option, index) => {
+
+            const optionCard = document.createElement("div");
+            optionCard.className = "product-option";
+            optionCard.dataset.index = index;
+
+            const productName = document.createElement("div");
+            productName.className = "product-name";
+            productName.innerText = option.name;
+
+            const details = document.createElement("div");
+            details.className = "product-details";
+            details.innerText =
+                option.snippet || "Product found through live web search.";
+
+            const source = document.createElement("div");
+            source.className = "product-source";
+            source.innerText = `Source: ${option.source}`;
+
+            const actions = document.createElement("div");
+            actions.className = "product-actions";
+
+            const viewButton = document.createElement("a");
+            viewButton.className = "view-product-btn";
+            viewButton.innerText = "View Product";
+            viewButton.href = option.url;
+            viewButton.target = "_blank";
+            viewButton.rel = "noopener noreferrer";
+
+            const selectButton = document.createElement("button");
+            selectButton.className = "select-product-btn";
+            selectButton.innerText = "Select";
+            selectButton.type = "button";
+
+            const selectedLabel = document.createElement("span");
+            selectedLabel.className = "selected-label";
+
+            selectButton.onclick = function () {
+                selectProductOption(option, optionCard, selectedLabel);
+            };
+
+            actions.appendChild(viewButton);
+            actions.appendChild(selectButton);
+            actions.appendChild(selectedLabel);
+
+            optionCard.appendChild(productName);
+            optionCard.appendChild(details);
+            optionCard.appendChild(source);
+            optionCard.appendChild(actions);
+
+            card.appendChild(optionCard);
+        });
+
+        const selectionStatus = document.createElement("div");
+        selectionStatus.id = "selectionStatus";
+        selectionStatus.className = "selection-status";
+        selectionStatus.innerText = "Select one option to continue.";
+
+        card.appendChild(selectionStatus);
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(card);
+        row.appendChild(wrapper);
+        chat.appendChild(row);
+
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+
+    function selectProductOption(option, optionCard, selectedLabel) {
+
+        document.querySelectorAll(".product-option").forEach(card => {
+            card.classList.remove("selected");
+        });
+
+        document.querySelectorAll(".selected-label").forEach(label => {
+            label.innerText = "";
+        });
+
+        optionCard.classList.add("selected");
+        selectedLabel.innerText = "Selected ✓";
+
+        selectedProductOption = option;
+
+        const selectionStatus =
+            document.getElementById("selectionStatus");
+
+        if (selectionStatus) {
+            selectionStatus.innerText =
+                `Selected: ${option.name}. Review the product before continuing.`;
+        }
+
+        addMessage(
+            "agent",
+            `You've selected this product:\n${option.name}\n${option.source}\n\n` +
+            `I'll use this exact selection for the purchase flow.`
+        );
+
+        setStatus("Product selected.");
+    }
+
+
+    function setStatus(text) {
+
+        document.getElementById("systemStatus").innerText = text;
+    }
+
+
+    /* ========================================
+       SEND MESSAGE TO BUYER AGENT
+    ======================================== */
+
+    async function sendMessage() {
+
+        const input =
+            document.getElementById("messageInput");
+
+        const sendButton =
+            document.getElementById("sendButton");
+
+
+        const message =
+            input.value.trim();
+
+
+        if (!message) {
+            return;
+        }
+
+
+        addMessage("user", message);
+
+        // A fresh request starts a fresh product selection.
+        if (!conversationId) {
+            selectedProductOption = null;
+        }
+
+        input.value = "";
+
+        sendButton.disabled = true;
+
+        setStatus("Buyer Agent is thinking...");
+
+
+        try {
+
+            const response = await fetch(
+                "/agent/chat",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        conversation_id:
+                            conversationId,
+
+                        message: message
+
+                    })
+                }
+            );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.detail ||
+                    "Buyer Agent request failed."
+                );
+            }
+
+
+            conversationId =
+                data.conversation_id;
+
+
+            /* --------------------------------
+               NO MATCH
+            -------------------------------- */
+
+            if (data.status === "no_match") {
+
+                addMessage(
+                    "agent",
+                    data.message
+                );
+
+                waitingForApproval = false;
+
+                setStatus("");
+
+                return;
+            }
+
+
+            /* --------------------------------
+               WAITING FOR APPROVAL
+            -------------------------------- */
+
+            if (
+                data.status ===
+                "awaiting_approval"
+            ) {
+
+                addMessage(
+                    "agent",
+                    data.message
+                );
+
+
+                if (data.recommendation) {
+
+                    addRecommendation(
+                        data.recommendation
+                    );
+                }
+
+
+                waitingForApproval = true;
+
+
+                showApprovalButton();
+
+
+                setStatus(
+                    "Waiting for your approval."
+                );
+
+
+                return;
+            }
+
+
+            /* --------------------------------
+               CANCELLED
+            -------------------------------- */
+
+            if (data.status === "cancelled") {
+
+                addMessage(
+                    "agent",
+                    data.message
+                );
+
+                waitingForApproval = false;
+
+                hideApprovalButton();
+
+                setStatus("");
+
+                return;
+            }
+
+
+            /* --------------------------------
+               PURCHASE STARTED
+            -------------------------------- */
+
+            if (
+                data.status ===
+                "purchase_started"
+            ) {
+
+                waitingForApproval = false;
+
+                hideApprovalButton();
+
+                purchaseStarted = true;
+
+
+                addMessage(
+                    "agent",
+                    data.message
+                );
+
+
+                await handlePurchase(
+                    data.purchase
+                );
+
+
+                return;
+            }
+
+        }
+        catch (error) {
+
+            addMessage(
+                "agent",
+                "Something went wrong: " +
+                error.message
+            );
+
+            setStatus("");
+        }
+        finally {
+
+            sendButton.disabled = false;
+        }
+    }
+
+
+    /* ========================================
+       APPROVAL BUTTON
+    ======================================== */
+
+    function showApprovalButton() {
+
+        const area =
+            document.getElementById(
+                "approvalArea"
+            );
+
+
+        area.innerHTML = "";
+
+
+        const button =
+            document.createElement("button");
+
+
+        button.className =
+            "approve-btn";
+
+
+        button.innerText =
+            "Yes, buy it";
+
+
+        button.onclick =
+            approvePurchase;
+
+
+        area.appendChild(button);
+    }
+
+
+    function hideApprovalButton() {
+
+        document.getElementById(
+            "approvalArea"
+        ).innerHTML = "";
+    }
+
+
+    /* ========================================
+       EXPLICIT USER APPROVAL
+    ======================================== */
+
+    async function approvePurchase() {
+
+        if (
+            !conversationId ||
+            !waitingForApproval
+        ) {
+            return;
+        }
+
+
+        const button =
+            document.querySelector(
+                ".approve-btn"
+            );
+
+
+        if (button) {
+            button.disabled = true;
+            button.innerText =
+                "Buyer Agent is initiating purchase...";
+        }
+
+
+        waitingForApproval = false;
+
+
+        addMessage(
+            "user",
+            "Yes, buy it"
+        );
+
+
+        setStatus(
+            "Buyer Agent is initiating the purchase..."
+        );
+
+
+        try {
+
+            const response = await fetch(
+                "/agent/chat",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+
+                        conversation_id:
+                            conversationId,
+
+                        message: "yes"
+
+                    })
+                }
+            );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.detail ||
+                    "Purchase initiation failed."
+                );
+            }
+
+
+            if (
+                data.status !==
+                "purchase_started"
+            ) {
+
+                throw new Error(
+                    data.message ||
+                    "Purchase was not started."
+                );
+            }
+
+
+            hideApprovalButton();
+
+
+            addMessage(
+                "agent",
+                "Purchase approved. I'm now processing the order through the merchant, authorization and trust-policy flow."
+            );
+
+
+            await handlePurchase(
+                data.purchase
+            );
+
+        }
+        catch (error) {
+
+            addMessage(
+                "agent",
+                "I couldn't start the purchase: " +
+                error.message
+            );
+
+            setStatus("");
+
+            waitingForApproval = true;
+
+            showApprovalButton();
+        }
+    }
+
+
+    /* ========================================
+       HANDLE PURCHASE PIPELINE
+    ======================================== */
+
+    async function handlePurchase(
+        purchase
+    ) {
+
+        if (!purchase) {
+
+            throw new Error(
+                "Purchase response is missing."
+            );
+        }
+
+
+        if (
+            purchase.status !==
+            "order_created"
+        ) {
+
+            addMessage(
+                "agent",
+                "The purchase was blocked before payment.\n\n" +
+                JSON.stringify(
+                    purchase,
+                    null,
+                    2
+                )
+            );
+
+            setStatus("");
+
+            return;
+        }
+
+
+        const order =
+            purchase.razorpay_order;
+
+
+        /* --------------------------------
+           SHOW AGENTIC STEPS
+        -------------------------------- */
+
+        addAgenticFlow();
+
+
+        setStatus(
+            "Opening secure Razorpay Checkout..."
+        );
+
+
+        /* --------------------------------
+           GET PUBLIC RAZORPAY KEY
+        -------------------------------- */
+
+        const configResponse =
+            await fetch(
+                "/config/public"
+            );
+
+
+        const config =
+            await configResponse.json();
+
+
+        /* --------------------------------
+           RAZORPAY CHECKOUT
+        -------------------------------- */
+
+        const options = {
+
+            key:
+                config.razorpay_key_id,
+
+            amount:
+                order.amount_paise,
+
+            currency:
+                order.currency,
+
+            name:
+                "RazorMesh",
+
+            description:
+                "Agentic Commerce Purchase",
+
+            order_id:
+                order.order_id,
+
+
+            handler:
+                async function (
+                    paymentResponse
+                ) {
+
+                    setStatus(
+                        "Payment received. Verifying..."
+                    );
+
+
+                    updateFlowStep(
+                        "payment",
+                        "done"
+                    );
+
+
+                    try {
+
+                        const verifyResponse =
+                            await fetch(
+                                "/payment/verify",
+                                {
+                                    method: "POST",
+
+                                    headers: {
+                                        "Content-Type":
+                                            "application/json"
+                                    },
+
+                                    body:
+                                        JSON.stringify({
+
+                                            razorpay_order_id:
+                                                paymentResponse
+                                                    .razorpay_order_id,
+
+                                            razorpay_payment_id:
+                                                paymentResponse
+                                                    .razorpay_payment_id,
+
+                                            razorpay_signature:
+                                                paymentResponse
+                                                    .razorpay_signature
+
+                                        })
+                                }
+                            );
+
+
+                        const verification =
+                            await verifyResponse.json();
+
+
+                        if (!verifyResponse.ok) {
+
+                            throw new Error(
+                                verification.detail ||
+                                "Payment verification failed."
+                            );
+                        }
+
+
+                        updateFlowStep(
+                            "verification",
+                            "done"
+                        );
+
+
+                        updateFlowStep(
+                            "fulfillment",
+                            "done"
+                        );
+
+
+                        showFinalResult(
+                            purchase,
+                            verification
+                        );
+
+
+                        setStatus(
+                            "Payment verified successfully."
+                        );
+
+                    }
+                    catch (error) {
+
+                        addMessage(
+                            "agent",
+                            "Payment verification failed:\n" +
+                            error.message
+                        );
+
+                        setStatus("");
+                    }
+                },
+
+
+            theme: {
+                color: "#111827"
+            }
+        };
+
+
+        const razorpay =
+            new Razorpay(options);
+
+
+        razorpay.on(
+            "payment.failed",
+            function (response) {
+
+                setStatus("");
+
+
+                addMessage(
+                    "agent",
+                    "Payment failed.\n\n" +
+                    JSON.stringify(
+                        response.error,
+                        null,
+                        2
+                    )
+                );
+            }
+        );
+
+
+        razorpay.open();
+    }
+
+
+    /* ========================================
+       AGENTIC FLOW DISPLAY
+    ======================================== */
+
+    function addAgenticFlow() {
+
+        const chat =
+            document.getElementById("chat");
+
+
+        const row =
+            document.createElement("div");
+
+
+        row.className =
+            "message-row agent";
+
+
+        const wrapper =
+            document.createElement("div");
+
+
+        const label =
+            document.createElement("div");
+
+
+        label.className =
+            "agent-label";
+
+
+        label.innerText =
+            "Buyer Agent";
+
+
+        const flow =
+            document.createElement("div");
+
+
+        flow.className =
+            "flow";
+
+
+        flow.id =
+            "agenticFlow";
+
+
+        flow.innerHTML = `
+
+            <div class="flow-title">
+                Agentic Commerce Execution
+            </div>
+
+            <div class="step done">
+                ✓ User approval received
+            </div>
+
+            <div class="step done">
+                ✓ Merchant Agent contacted
+            </div>
+
+            <div class="step done">
+                ✓ Checkout authorized
+            </div>
+
+            <div class="step done">
+                ✓ AP2 authorization verified
+            </div>
+
+            <div class="step done">
+                ✓ Trust Policy approved
+            </div>
+
+            <div class="step done">
+                ✓ Razorpay order created
+            </div>
+
+            <div
+                id="flow-payment"
+                class="step"
+            >
+                ○ Payment pending
+            </div>
+
+            <div
+                id="flow-verification"
+                class="step"
+            >
+                ○ Payment verification pending
+            </div>
+
+            <div
+                id="flow-fulfillment"
+                class="step"
+            >
+                ○ Order fulfillment pending
+            </div>
+        `;
+
+
+        wrapper.appendChild(label);
+
+        wrapper.appendChild(flow);
+
+        row.appendChild(wrapper);
+
+        chat.appendChild(row);
+
+
+        chat.scrollTop =
+            chat.scrollHeight;
+    }
+
+
+    function updateFlowStep(
+        step,
+        status
+    ) {
+
+        const element =
+            document.getElementById(
+                "flow-" + step
+            );
+
+
+        if (!element) {
+            return;
+        }
+
+
+        if (status === "done") {
+
+            if (step === "payment") {
+
+                element.innerText =
+                    "✓ Payment received";
+
+            }
+            else if (
+                step === "verification"
+            ) {
+
+                element.innerText =
+                    "✓ Payment verified";
+
+            }
+            else if (
+                step === "fulfillment"
+            ) {
+
+                element.innerText =
+                    "✓ Order fulfilled";
+            }
+
+
+            element.classList.add("done");
+        }
+    }
+
+
+    /* ========================================
+       FINAL BUYER AGENT RESPONSE
+    ======================================== */
+
+    function showFinalResult(
+        purchase,
+        verification
+    ) {
+
+        const buyer =
+            purchase.buyer;
+
+
+        const recommendation =
+            purchase.acp_checkout;
+
+
+        let productName =
+            "Product";
+
+
+        let quantity = 1;
+
+
+        if (
+            recommendation &&
+            recommendation.cart &&
+            recommendation.cart.items &&
+            recommendation.cart.items.length > 0
+        ) {
+
+            const item =
+                recommendation.cart.items[0];
+
+
+            productName =
+                item.name;
+
+
+            quantity =
+                item.quantity;
+        }
+
+
+        const total =
+            (
+                verification.amount_paise /
+                100
+            ).toLocaleString(
+                "en-IN"
+            );
+
+
+        addMessage(
+            "agent",
+            `Payment verified successfully ✓
+
+Your purchase is confirmed.
+
+${productName} × ${quantity}
+Total: ₹${total}
+Payment: ${verification.payment_status}
+Order: Fulfilled
+
+Fulfillment ID: ${verification.fulfillment.fulfillment_id}`
+        );
+
+
+        setStatus(
+            "Order completed successfully."
+        );
+    }
+
+
+    /* ========================================
+       ENTER KEY SUPPORT
+    ======================================== */
+
+    document
+        .getElementById("messageInput")
+        .addEventListener(
+            "keydown",
+            function(event) {
+
+                if (
+                    event.key === "Enter"
+                ) {
+
+                    event.preventDefault();
+
+                    sendMessage();
+                }
+            }
+        );
+
+</script>
+
+</body>
+
+</html>
