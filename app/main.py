@@ -20,6 +20,7 @@ from app.services.audit_service import (
     record_audit_event,
 )
 from app.services.fulfillment_service import fulfill_order
+from app.model import PurchaseIntent
 
 from uuid import uuid4
 import re
@@ -154,6 +155,60 @@ def _extract_budget(constraints: list[str]) -> float | None:
     return None
 
 
+def _create_purchase_intent(conversation: dict, selected_product: dict) -> PurchaseIntent:
+    """Create a structured authorization for the exact selected product."""
+    if not isinstance(selected_product, dict):
+        raise HTTPException(status_code=400, detail="Selected product must be an object.")
+
+    product_url = str(selected_product.get("url", "")).strip()
+    product_name = str(selected_product.get("name", "")).strip()
+    merchant = str(selected_product.get("source", "")).strip()
+
+    if not product_url or not product_name or not merchant:
+        raise HTTPException(status_code=400, detail="Selected product is missing name, URL, or merchant source.")
+
+    raw_amount = selected_product.get("amount", selected_product.get("price"))
+    if raw_amount is None:
+        raise HTTPException(status_code=400, detail="The selected web product does not have a verified price yet. Purchase authorization cannot be created from a search snippet.")
+
+    try:
+        unit_price = float(raw_amount)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Selected product price must be numeric.")
+    if unit_price <= 0:
+        raise HTTPException(status_code=400, detail="Selected product price must be greater than zero.")
+
+    quantity = int(conversation["buyer_result"].get("quantity", 1) or 1)
+    if quantity <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be greater than zero.")
+
+    total_amount = unit_price * quantity
+    spending_limit = selected_product.get("spending_limit", total_amount)
+    try:
+        spending_limit = float(spending_limit)
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Spending limit must be numeric.")
+    if spending_limit < total_amount:
+        raise HTTPException(status_code=400, detail="Spending limit is lower than the purchase total.")
+
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone.utc)
+
+    return PurchaseIntent(
+        product_id=str(selected_product.get("product_id") or product_url),
+        product_name=product_name,
+        merchant=merchant,
+        product_url=product_url,
+        quantity=quantity,
+        amount=total_amount,
+        currency=str(selected_product.get("currency") or "INR").upper(),
+        spending_limit=spending_limit,
+        user_authorized=True,
+        created_at=now,
+        expires_at=now + timedelta(minutes=30),
+    )
+
+
 def _build_recommendation(
     buyer_result: dict,
 ) -> dict:
@@ -283,6 +338,8 @@ def agent_chat(request: dict):
             "customer_request": message,
             "buyer_result": buyer_result,
             "recommendation": recommendation,
+            "selected_product": None,
+            "purchase_intent": None,
             "status": "awaiting_approval",
         }
 
@@ -312,6 +369,22 @@ def agent_chat(request: dict):
                 "This conversation has already been completed."
             ),
         }
+
+    # =================================================
+    # SELECTED PRODUCT
+    # =================================================
+
+    selected_product = request.get("selected_product")
+    if selected_product is not None:
+        if not isinstance(selected_product, dict):
+            raise HTTPException(status_code=400, detail="selected_product must be an object.")
+
+        allowed_options = conversation["recommendation"].get("options", [])
+        selected_url = str(selected_product.get("url", "")).strip()
+        matched_option = next((o for o in allowed_options if str(o.get("url", "")).strip() == selected_url), None)
+        if matched_option is None:
+            raise HTTPException(status_code=400, detail="Selected product is not one of the products returned for this conversation.")
+        conversation["selected_product"] = matched_option
 
     # =================================================
     # DETERMINISTIC APPROVAL GATE
@@ -353,32 +426,30 @@ def agent_chat(request: dict):
     # USER APPROVED
     # =================================================
 
-    conversation["status"] = "approved"
-
-    # Invoke the EXISTING purchase pipeline.
-    #
-    # This is the important boundary:
-    # the purchase flow cannot be reached from the
-    # conversational endpoint until explicit approval
-    # has been deterministically detected.
-    purchase_result = agent_purchase(
-        {
-            "customer_request": conversation["customer_request"],
-            "approval_confirmed": True,
+    selected_product = conversation.get("selected_product")
+    if not selected_product:
+        return {
+            "conversation_id": conversation_id,
+            "status": "awaiting_approval",
+            "message": "Please select one of the products first. I won't authorize a purchase against an unselected product.",
         }
-    )
 
-    conversation["status"] = "purchase_started"
+    purchase_intent = _create_purchase_intent(conversation, selected_product)
+    conversation["purchase_intent"] = purchase_intent.model_dump(mode="json")
+    conversation["status"] = "purchase_intent_created"
+
+    record_audit_event(
+        transaction_id=f"conversation:{conversation_id}",
+        event_type="purchase_intent_created",
+        status="authorized",
+        details=conversation["purchase_intent"],
+    )
 
     return {
         "conversation_id": conversation_id,
-        "status": "purchase_started",
-        "message": (
-            "Approved. I've passed the purchase through "
-            "the merchant, authorization, trust-policy, "
-            "and Razorpay flow."
-        ),
-        "purchase": purchase_result,
+        "status": "purchase_intent_created",
+        "message": "Purchase authorization created for the exact product you selected. The payment rail has NOT been started yet.",
+        "purchase_intent": conversation["purchase_intent"],
     }
 
 
