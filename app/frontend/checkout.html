@@ -918,25 +918,28 @@ Tell me what you'd like to buy, along with any preferences or budget you have.
         try {
 
             const response = await fetch(
-                "/agent/chat",
-                {
-                    method: "POST",
+    "/agent/chat",
+    {
+        method: "POST",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+        headers: {
+            "Content-Type":
+                "application/json"
+        },
 
-                    body: JSON.stringify({
+        body: JSON.stringify({
 
-                        conversation_id:
-                            conversationId,
+            conversation_id:
+                conversationId,
 
-                        message: "yes"
+            message: "yes",
+              
+            selected_product:
+                selectedProductOption
 
-                    })
-                }
-            );
+        })
+    }
+);
 
 
             const data =
